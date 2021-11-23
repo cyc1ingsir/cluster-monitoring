@@ -1,6 +1,8 @@
 {
-  _config+:: {
-    namespace: 'monitoring',
+  values+:: {
+    common+: {
+      namespace: 'monitoring',
+    },
   },
   // Enable or disable additional modules
   modules: [
@@ -90,6 +92,6 @@
     //Ex. plugins: ['grafana-piechart-panel', 'grafana-clock-panel'],
     plugins: [],
     //Ex. env: [ { name: 'http_proxy', value: 'host:8080' } ]
-    env: []
+    env: [],
   },
 }

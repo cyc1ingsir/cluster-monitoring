@@ -1,4 +1,5 @@
-local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
+local k = import 'github.com/jsonnet-libs/k8s-libsonnet/1.22/main.libsonnet';
+
 
 {
   // Generates the manifests for all objects in kp except those starting with "_"
@@ -25,8 +26,8 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
     local serviceAccount = k.core.v1.serviceAccount;
 
     serviceAccount.new(name)
-    + (if labels != null then serviceAccount.mixin.metadata.withLabels(labels) else {})
-    + serviceAccount.mixin.metadata.withNamespace(namespace)
+    + (if labels != null then serviceAccount.metadata.withLabels(labels) else {})
+    + serviceAccount.metadata.withNamespace(namespace)
   ),
 
   // Creates ClusterRoles
@@ -48,8 +49,8 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
     local rules = r;
 
     local c = clusterRole.new()
-              + (if labels != null then clusterRole.mixin.metadata.withLabels(labels) else {})
-              + clusterRole.mixin.metadata.withName(name)
+              + (if labels != null then clusterRole.metadata.withLabels(labels) else {})
+              + clusterRole.metadata.withName(name)
               + clusterRole.withRules(rules);
     c
   ),
@@ -59,11 +60,11 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
     local clusterRoleBinding = k.rbac.v1.clusterRoleBinding;
 
     clusterRoleBinding.new()
-    + clusterRoleBinding.mixin.metadata.withName(name)
-    + (if labels != null then clusterRoleBinding.mixin.metadata.withLabels(labels) else {})
-    + clusterRoleBinding.mixin.roleRef.withApiGroup('rbac.authorization.k8s.io')
-    + clusterRoleBinding.mixin.roleRef.withName(clusterRole)
-    + clusterRoleBinding.mixin.roleRef.mixinInstance({ kind: 'ClusterRole' })
+    + clusterRoleBinding.metadata.withName(name)
+    + (if labels != null then clusterRoleBinding.metadata.withLabels(labels) else {})
+    + clusterRoleBinding.roleRef.withApiGroup('rbac.authorization.k8s.io')
+    + clusterRoleBinding.roleRef.withName(clusterRole)
+    + clusterRoleBinding.roleRef.mixinInstance({ kind: 'ClusterRole' })
     + clusterRoleBinding.withSubjects([{ kind: 'ServiceAccount', name: serviceAccount, namespace: serviceAccountNamespace }])
   ),
 
@@ -84,9 +85,9 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
                    ])
                    + endpointSubset.withPorts(Port);
     endpoints.new()
-    + endpoints.mixin.metadata.withName(name)
-    + endpoints.mixin.metadata.withNamespace(namespace)
-    + endpoints.mixin.metadata.withLabels({ 'k8s-app': name })
+    + endpoints.metadata.withName(name)
+    + endpoints.metadata.withNamespace(namespace)
+    + endpoints.metadata.withLabels({ 'k8s-app': name })
     + endpoints.withSubsets(subset)
   ),
 
@@ -127,24 +128,23 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
 
   // Add TLS to Ingress resource with secret containing the certificates if exists
   addIngressTLS(I, S=''):: (
-    local ingress = k.networking.v1beta1.ingress;
-    local ingressTls = ingress.mixin.spec.tlsType;
+    local ingress = k.networking.v1.ingress;
+    // local ingressTls = ingress.spec.tls;
     local host = I.spec.rules[0].host;
     local namespace = I.metadata.namespace;
 
-    I + ingress.mixin.spec.withTls(
-      ingressTls.new() +
-      ingressTls.withHosts(host) +
+    I + ingress.spec.withTls(
+      { hosts+: [host] } +
       (if S != '' then { secretName: S } else {})
     )
   ),
 
-  // Creates a new TLS Secred with Certificate and Key
+  // Creates a new TLS Secret with Certificate and Key
   newTLSSecret(name, namespace, crt, key):: (
     local secret = k.core.v1.secret;
 
     secret.new(name) +
-    secret.mixin.metadata.withNamespace(namespace) +
+    secret.metadata.withNamespace(namespace) +
     secret.withType('kubernetes.io/tls') +
     secret.withData(
       {
@@ -157,7 +157,7 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
   // Creates new basic deployments
   newDeployment(name, namespace, image, cmd, port):: (
     local deployment = k.apps.v1.deployment;
-    local container = k.apps.v1.deployment.mixin.spec.template.spec.containersType;
+    local container = k.apps.v1.deployment.spec.template.spec.containersType;
     local containerPort = container.portsType;
 
     local con =
@@ -168,22 +168,22 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
     local c = [con];
 
     local d = deployment.new(name, 1, c, { app: name })
-              + deployment.mixin.metadata.withNamespace(namespace)
-              + deployment.mixin.metadata.withLabels({ app: name })
-              + deployment.mixin.spec.selector.withMatchLabels({ app: name })
-              + deployment.mixin.spec.strategy.withType('RollingUpdate')
-              + deployment.mixin.spec.template.spec.withRestartPolicy('Always');
+              + deployment.metadata.withNamespace(namespace)
+              + deployment.metadata.withLabels({ app: name })
+              + deployment.spec.selector.withMatchLabels({ app: name })
+              + deployment.spec.strategy.withType('RollingUpdate')
+              + deployment.spec.template.spec.withRestartPolicy('Always');
     d
   ),
 
   newService(name, namespace, port):: (
     local service = k.core.v1.service;
-    local servicePort = k.core.v1.service.mixin.spec.portsType;
+    local servicePort = k.core.v1.service.spec.portsType;
     local p = servicePort.newNamed(name, port, port);
 
     local s = service.new(name, { app: name }, p)
-              + service.mixin.metadata.withNamespace(namespace)
-              + service.mixin.metadata.withLabels({ app: name });
+              + service.metadata.withNamespace(namespace)
+              + service.metadata.withLabels({ app: name });
     s
   ),
 

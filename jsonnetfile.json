@@ -4,11 +4,19 @@
     {
       "source": {
         "git": {
-          "remote": "https://github.com/coreos/kube-prometheus.git",
+          "remote": "https://github.com/prometheus-operator/kube-prometheus.git",
           "subdir": "jsonnet/kube-prometheus"
         }
       },
-      "version": "master"
+      "version": "release-0.9"
+    },
+    {
+      "source": {
+        "git": {
+          "remote": "https://github.com/jsonnet-libs/k8s-libsonnet/1.22@main"
+        }
+      },
+      "version": "main"
     }
   ],
   "legacyImports": true
