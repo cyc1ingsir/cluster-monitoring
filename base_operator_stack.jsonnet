@@ -6,66 +6,65 @@ local vars = import 'vars.jsonnet';
   values+:: {
     common+: {
       namespace: 'monitoring',
+    },
 
-      urls+:: {
-        prom_ingress: 'prometheus.' + vars.suffixDomain,
-        alert_ingress: 'alertmanager.' + vars.suffixDomain,
-        grafana_ingress: 'grafana.' + vars.suffixDomain,
-        grafana_ingress_external: 'grafana.' + vars.suffixDomain,
+    urls+:: {
+      prom_ingress: 'prometheus.' + vars.suffixDomain,
+      alert_ingress: 'alertmanager.' + vars.suffixDomain,
+      grafana_ingress: 'grafana.' + vars.suffixDomain,
+      grafana_ingress_external: 'grafana.' + vars.suffixDomain,
+    },
+
+    prometheus+:: {
+      names: 'k8s',
+      replicas: 1,
+      namespaces: ['default', 'kube-system', 'monitoring'],
+    },
+
+    alertmanager+:: {
+      replicas: 1,
+    },
+
+    kubeStateMetrics+:: {
+      collectors: '',  // empty string gets a default set
+      scrapeInterval: '30s',
+      scrapeTimeout: '30s',
+
+      baseCPU: '100m',
+      baseMemory: '150Mi',
+      cpuPerNode: '2m',
+      memoryPerNode: '30Mi',
+    },
+
+    grafana+:: {
+      config: {
+        sections: {
+          session: { provider: 'memory' },
+          'auth.basic': { enabled: false },
+          'auth.anonymous': { enabled: false },
+          smtp: {
+            enabled: true,
+            host: 'smtp-server.monitoring.svc:25',
+            user: '',
+            password: '',
+            from_address: vars.grafana.from_address,
+            from_name: 'Grafana Alert',
+            skip_verify: true,
+          },
+        },
       },
-
-      prometheus+:: {
-        names: 'k8s',
-        replicas: 1,
-        namespaces: ['default', 'kube-system', 'monitoring'],
-      },
-
-      alertmanager+:: {
-        replicas: 1,
-      },
-
-      kubeStateMetrics+:: {
-        collectors: '',  // empty string gets a default set
-        scrapeInterval: '30s',
-        scrapeTimeout: '30s',
-
-        baseCPU: '100m',
-        baseMemory: '150Mi',
-        cpuPerNode: '2m',
-        memoryPerNode: '30Mi',
-      },
-
+      plugins: vars.grafana.plugins,
+      env: vars.grafana.env,
       // Add custom Grafana dashboards
-      grafanaDashboards+:: {
+      dashboards+:: {
         'kubernetes-cluster-dashboard.json': (import 'grafana-dashboards/kubernetes-cluster-dashboard.json'),
         'prometheus-dashboard.json': (import 'grafana-dashboards/prometheus-dashboard.json'),
         'coredns-dashboard.json': (import 'grafana-dashboards/coredns-dashboard.json'),
       },
-
-      grafana+:: {
-        config: {
-          sections: {
-            session: { provider: 'memory' },
-            'auth.basic': { enabled: false },
-            'auth.anonymous': { enabled: false },
-            smtp: {
-              enabled: true,
-              host: 'smtp-server.monitoring.svc:25',
-              user: '',
-              password: '',
-              from_address: vars.grafana.from_address,
-              from_name: 'Grafana Alert',
-              skip_verify: true,
-            },
-          },
-        },
-        plugins: vars.grafana.plugins,
-        env: vars.grafana.env,
-      },
     },
   },
   //---------------------------------------
-  // End of values.common
+  // End of _config
   //---------------------------------------
 
   prometheus+:: {
@@ -74,11 +73,11 @@ local vars = import 'vars.jsonnet';
     prometheus+: {
       spec+: {
                // Here one can use parameters from https://coreos.com/operators/prometheus/docs/latest/api.html#prometheusspec
-               replicas: $.values.common.prometheus.replicas,
+               replicas: $.values.prometheus.replicas,
                retention: vars.prometheus.retention,
                scrapeInterval: vars.prometheus.scrapeInterval,
                scrapeTimeout: vars.prometheus.scrapeTimeout,
-               externalUrl: 'http://' + $.values.common.urls.prom_ingress,
+               externalUrl: 'http://' + $.values.urls.prom_ingress,
              }
              + (if vars.enablePersistence.prometheus then {
                   storage: {
@@ -93,8 +92,12 @@ local vars = import 'vars.jsonnet';
     },
   },
 
+
+  grafana+:: {
+    dashboards+:: $.values.grafana.dashboards,
+  } +
   // Override deployment for Grafana data persistence
-  grafana+:: if vars.enablePersistence.grafana then {
+  if vars.enablePersistence.grafana then {
     deployment+: {
       spec+: {
         template+: {
@@ -133,12 +136,10 @@ local vars = import 'vars.jsonnet';
 
   } else {},
 
-  grafanaDashboards+:: $.values.common.grafanaDashboards,
-
   // Create ingress objects per application
   ingress+:: {
     alertmanager:
-      local I = utils.newIngress('alertmanager-main', $.values.common.namespace, $.values.common.urls.alert_ingress, '/', 'alertmanager-main', 'web');
+      local I = utils.newIngress('alertmanager-main', $.values.common.namespace, $.values.urls.alert_ingress, '/', 'alertmanager-main', 'web');
       if vars.TLSingress then
         if vars.UseProvidedCerts then
           utils.addIngressTLS(I, 'ingress-secret')
@@ -148,7 +149,7 @@ local vars = import 'vars.jsonnet';
         I,
 
     grafana:
-      local I = utils.newIngress('grafana', $.values.common.namespace, $.values.common.urls.grafana_ingress, '/', 'grafana', 'http');
+      local I = utils.newIngress('grafana', $.values.common.namespace, $.values.urls.grafana_ingress, '/', 'grafana', 'http');
       if vars.TLSingress then
         if vars.UseProvidedCerts then
           utils.addIngressTLS(I, 'ingress-secret')
@@ -158,7 +159,7 @@ local vars = import 'vars.jsonnet';
         I,
 
     prometheus:
-      local I = utils.newIngress('prometheus-k8s', $.values.common.namespace, $.values.common.urls.prom_ingress, '/', 'prometheus-k8s', 'web');
+      local I = utils.newIngress('prometheus-k8s', $.values.common.namespace, $.values.urls.prom_ingress, '/', 'prometheus-k8s', 'web');
       if vars.TLSingress then
         if vars.UseProvidedCerts then
           utils.addIngressTLS(I, 'ingress-secret')
@@ -179,7 +180,7 @@ local vars = import 'vars.jsonnet';
     //     }) +
     //     ingress.mixin.spec.withRules(
     //         ingressRule.new() +
-    //         ingressRule.withHost($.values.common.urls.grafana_ingress_external) +
+    //         ingressRule.withHost($.values.urls.grafana_ingress_external) +
     //         ingressRule.mixin.http.withPaths(
     //             httpIngressPath.new() +
     //             httpIngressPath.withPath('/') +

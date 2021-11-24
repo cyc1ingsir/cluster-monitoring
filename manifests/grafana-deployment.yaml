@@ -18,6 +18,7 @@ spec:
   template:
     metadata:
       annotations:
+        checksum/grafana-config: 159eafeac53ab8ae37e304567d386a2c
         checksum/grafana-datasources: fbf9c3b28f5667257167c2cec0ac311a
       labels:
         app.kubernetes.io/component: grafana
@@ -65,6 +66,9 @@ spec:
         - mountPath: /grafana-dashboard-definitions/0/controller-manager
           name: grafana-dashboard-controller-manager
           readOnly: false
+        - mountPath: /grafana-dashboard-definitions/0/coredns-dashboard
+          name: grafana-dashboard-coredns-dashboard
+          readOnly: false
         - mountPath: /grafana-dashboard-definitions/0/k8s-resources-cluster
           name: grafana-dashboard-k8s-resources-cluster
           readOnly: false
@@ -85,6 +89,9 @@ spec:
           readOnly: false
         - mountPath: /grafana-dashboard-definitions/0/kubelet
           name: grafana-dashboard-kubelet
+          readOnly: false
+        - mountPath: /grafana-dashboard-definitions/0/kubernetes-cluster-dashboard
+          name: grafana-dashboard-kubernetes-cluster-dashboard
           readOnly: false
         - mountPath: /grafana-dashboard-definitions/0/namespace-by-pod
           name: grafana-dashboard-namespace-by-pod
@@ -107,6 +114,9 @@ spec:
         - mountPath: /grafana-dashboard-definitions/0/pod-total
           name: grafana-dashboard-pod-total
           readOnly: false
+        - mountPath: /grafana-dashboard-definitions/0/prometheus-dashboard
+          name: grafana-dashboard-prometheus-dashboard
+          readOnly: false
         - mountPath: /grafana-dashboard-definitions/0/prometheus-remote-write
           name: grafana-dashboard-prometheus-remote-write
           readOnly: false
@@ -121,6 +131,9 @@ spec:
           readOnly: false
         - mountPath: /grafana-dashboard-definitions/0/workload-total
           name: grafana-dashboard-workload-total
+          readOnly: false
+        - mountPath: /etc/grafana
+          name: grafana-config
           readOnly: false
       nodeSelector:
         kubernetes.io/os: linux
@@ -151,6 +164,9 @@ spec:
           name: grafana-dashboard-controller-manager
         name: grafana-dashboard-controller-manager
       - configMap:
+          name: grafana-dashboard-coredns-dashboard
+        name: grafana-dashboard-coredns-dashboard
+      - configMap:
           name: grafana-dashboard-k8s-resources-cluster
         name: grafana-dashboard-k8s-resources-cluster
       - configMap:
@@ -171,6 +187,9 @@ spec:
       - configMap:
           name: grafana-dashboard-kubelet
         name: grafana-dashboard-kubelet
+      - configMap:
+          name: grafana-dashboard-kubernetes-cluster-dashboard
+        name: grafana-dashboard-kubernetes-cluster-dashboard
       - configMap:
           name: grafana-dashboard-namespace-by-pod
         name: grafana-dashboard-namespace-by-pod
@@ -193,6 +212,9 @@ spec:
           name: grafana-dashboard-pod-total
         name: grafana-dashboard-pod-total
       - configMap:
+          name: grafana-dashboard-prometheus-dashboard
+        name: grafana-dashboard-prometheus-dashboard
+      - configMap:
           name: grafana-dashboard-prometheus-remote-write
         name: grafana-dashboard-prometheus-remote-write
       - configMap:
@@ -207,3 +229,6 @@ spec:
       - configMap:
           name: grafana-dashboard-workload-total
         name: grafana-dashboard-workload-total
+      - name: grafana-config
+        secret:
+          secretName: grafana-config
