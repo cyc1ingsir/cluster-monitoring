@@ -7,7 +7,7 @@ local k = import 'ksonnet/ksonnet.beta.4/k.libsonnet';
     replicas: 1,
 
     imageRepos+:: {
-      speedtestExporter: 'ghcr.io/miguelndecarvalho/speedtest-exporter',  
+      speedtestExporter: 'ghcr.io/miguelndecarvalho/speedtest-exporter',
     },
 
     // Add custom dashboards
