@@ -71,21 +71,15 @@ local k = import 'github.com/jsonnet-libs/k8s-libsonnet/1.22/main.libsonnet';
   // Creates endpoint objects
   newEndpoint(name, namespace, ips, portName, portNumber):: (
     local endpoints = k.core.v1.endpoints;
-    local endpointSubset = endpoints.subsetsType;
-    local endpointPort = endpointSubset.portsType;
-    local Port = endpointPort.new()
-                 + endpointPort.withName(portName)
+    local endpointSubset = k.core.v1.endpointSubset;
+    local endpointPort = k.core.v1.endpointPort;
+    local Port = endpointPort.withName(portName)
                  + endpointPort.withPort(portNumber)
                  + endpointPort.withProtocol('TCP');
 
-    local subset = endpointSubset.new()
-                   + endpointSubset.withAddresses([
-                     { ip: IP }
-                     for IP in ips
-                   ])
-                   + endpointSubset.withPorts(Port);
-    endpoints.new()
-    + endpoints.metadata.withName(name)
+    local subset = endpointSubset.withAddresses([{ ip: IP } for IP in ips]) +
+                   endpointSubset.withPorts(Port);
+    endpoints.new(name)
     + endpoints.metadata.withNamespace(namespace)
     + endpoints.metadata.withLabels({ 'k8s-app': name })
     + endpoints.withSubsets(subset)

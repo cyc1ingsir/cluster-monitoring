@@ -6,9 +6,9 @@ local kp = (import 'kube-prometheus/main.libsonnet') +
            //  + (import 'kube-prometheus/kube-prometheus-kops-coredns.libsonnet')
            //  + (import 'kube-prometheus/kube-prometheus-kubeadm.libsonnet')
            // Additional modules are loaded dynamically from vars.jsonnet
-           //  + utils.join_objects([module.file for module in vars.modules if module.enabled])
+           utils.join_objects([module.file for module in vars.modules if module.enabled]) +
            // Load K3s customized modules
-           //  + utils.join_objects([m for m in [import 'modules/k3s-overrides.jsonnet'] if vars.k3s.enabled])
+           utils.join_objects([m for m in [import 'modules/k3s-overrides.jsonnet'] if vars.k3s.enabled]) +
            // Base stack is loaded at the end to override previous definitions
            (import 'base_operator_stack.jsonnet') +
            // Load image versions last to override default from modules
